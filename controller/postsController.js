@@ -1,28 +1,37 @@
+const connection = require("../data/db");
+
 //index
 
 const index = (req, res) => {
-  let postFiltered = postsData;
-  const { tags } = req.query;
-  if (tags) {
-    postFiltered = postFiltered.filter((post) => post.tags.includes(tags));
-  }
+  const id = req.params.id;
+  const sql = "SELECT * FROM posts";
 
-  //throw new Error("C'è stato un errore nel server!"); test error 500
-
-  res.json(postFiltered);
+  connection.query(sql, [id], (err, results) => {
+    if (err) return res.status(500).json({ error: "Database query failed" });
+    if (results.length === 0)
+      return res.status(404).json({ error: "Posts not found" });
+    res.json(results);
+  });
 };
 
 //show
-const show = (req, res) => {
-  const post = postsData.find((post) => post.id == req.params.id);
-  if (!post) {
-    return res.status(404).json({
-      error: "Post not found",
-      message: "Post non trovato",
-    });
-  }
-  res.json(post);
-};
+function show(req, res) {
+  const sql = `SELECT * FROM posts WHERE id = ?`;
+  const id = req.params.id;
+
+  connection.query(sql, [id], (err, results) => {
+    if (err) return res.status(500).json({ error: "Database query failed" });
+
+    if (results.length === 0) {
+      return res.status(404).json({
+        error: "Post not found",
+        message: "Post non trovato",
+      });
+    }
+
+    res.json(results[0]);
+  });
+}
 
 //store
 const store = (req, res) => {
@@ -86,14 +95,15 @@ const modify = (req, res) => {
 };
 
 //destroy
-const destroy = (req, res) => {
-  const post = postsData.find((post) => post.id == req.params.id);
-  if (!post) {
-    return res.status(404).json({
-      error: "Post not found",
-    });
-  }
-  postsData.splice(postsData.indexOf(post), 1);
-  res.sendStatus(204);
-};
+function destroy(req, res) {
+  const sql = `DELETE FROM posts WHERE id = ?`;
+  const id = req.params.id;
+
+  connection.query(sql, [id], (err, results) => {
+    if (err) return res.status(500).json({ error: "Database query failed" });
+
+    res.sendStatus(204);
+  });
+}
+
 module.exports = { index, show, store, update, modify, destroy };
